@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "mnist-etc"
+version = "0.1.0"
+description = "Project for MLOps course"
+authors = ["Petros Osetros <petr@osetr.lake>"]
+license = "BSD3"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = ">=3.9, <3.12"
+tensorflow = "^2.13.0"
+tqdm = "^4.66.1"
+pillow = "^10.0.1"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
