@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 
+import os
+
 import tensorflow as tf
 import models
-# import tqdm
+# import tqdm # fails smh
 from tqdm.autonotebook import tqdm
 
 if __name__ == "__main__":
@@ -19,8 +21,9 @@ if __name__ == "__main__":
     val_masks = tf.constant([y_val == i for i in range(10)])
     val_examples = tf.constant([X_val[val_masks[i, ...]][:n_examples, ...] for i in range(10)])
 
-    train_data = tf.data.Dataset.from_tensor_slices((X_train, y_train)).shuffle(10000).batch(32)
-    val_data = tf.data.Dataset.from_tensor_slices((X_val, y_val)).batch(32)
+    batch_size = 32
+    train_data = tf.data.Dataset.from_tensor_slices((X_train, y_train)).shuffle(10000).batch(batch_size)
+    val_data = tf.data.Dataset.from_tensor_slices((X_val, y_val)).batch(batch_size)
 
     ae = models.Autoencoder()
     lo = tf.keras.losses.MeanSquaredError()
@@ -46,6 +49,8 @@ if __name__ == "__main__":
         val_loss(loss)
 
 
+    if not os.path.exists("artifacts"):
+        os.mkdir("artifacts")
     EPOCHS = 2
 
     for epoch in range(EPOCHS):
@@ -61,7 +66,11 @@ if __name__ == "__main__":
         print(f"train loss: {train_loss.result()}, validation loss: {val_loss.result()}")
 
         indices = tf.random.uniform(shape=(10,), minval=0, maxval=n_examples, dtype=tf.int32)
-        print(f"saving examples into artifacts/{epoch+1}")
+        picdir = f"artifacts/{epoch+1}"
+        if not os.path.exists(picdir):
+            # TODO handle permission denied?
+            os.makedirs(picdir)
+        print("saving examples into " + picdir)
         for number, index in zip(range(10), indices):
             img = val_examples[number:number+1, index, ...]
             rec = ae(img)
