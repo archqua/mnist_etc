@@ -71,11 +71,11 @@ if __name__ == "__main__":
             # TODO handle permission denied?
             os.makedirs(picdir)
         print("saving examples into " + picdir)
-        for number, index in zip(range(10), indices):
-            img = val_examples[number:number+1, index, ...]
+        for digit, index in zip(range(10), indices):
+            img = val_examples[digit:digit+1, index, ...]
             rec = ae(img)
-            tf.keras.utils.save_img(f"artifacts/{epoch+1}/orig_{number}.png", img[0, ...])
-            tf.keras.utils.save_img(f"artifacts/{epoch+1}/rec_{number}.png", rec[0, ...])
+            tf.keras.utils.save_img(f"artifacts/{epoch+1}/orig_{digit}.png", img[0, ...])
+            tf.keras.utils.save_img(f"artifacts/{epoch+1}/rec_{digit}.png", rec[0, ...])
 
     print("saving autoencoder weights into artifacts/weights.h5")
     ae.save_weights("artifacts/weights.h5")
