@@ -18,7 +18,9 @@ if __name__ == "__main__":
 
     n_examples = 7
     # train_masks = tf.constant([y_train == i for i in range(10)])
-    # train_examples = tf.constant([X_train[train_masks[i, ...]][:n_examples, ...] for i in range(10)])
+    # train_examples = tf.constant(
+    #     [X_train[train_masks[i, ...]][:n_examples, ...] for i in range(10)]
+    # )
     val_masks = tf.constant([y_val == i for i in range(10)])
     val_examples = tf.constant(
         [X_val[val_masks[i, ...]][:n_examples, ...] for i in range(10)]
