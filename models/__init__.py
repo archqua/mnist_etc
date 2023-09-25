@@ -1,24 +1,36 @@
-import tensorflow as tf
+# import tensorflow as tf
 from tensorflow import keras
-from keras.layers import Dense, Conv2D, Conv2DTranspose, MaxPooling2D, Flatten, Reshape, Resizing, Activation
+from keras.layers import (
+    # Dense,
+    Conv2D,
+    Conv2DTranspose,
+    MaxPooling2D,
+    Flatten,
+    Reshape,
+    # Resizing,
+    # Activation,
+)
+
 UpConv2D = Conv2DTranspose
 
 
 class Encoder(keras.Model):
-    def __init__(self, hid_dim = 32):
+    """Encodes MNIST image into hidden representation vector of dimension `hid_dim` using convolutions"""
+
+    def __init__(self, hid_dim=32):
         super().__init__()
         # 28 -> 24
-        self.conv1 = Conv2D((hid_dim+7) // 8, 5, activation='relu')
+        self.conv1 = Conv2D((hid_dim + 7) // 8, 5, activation="relu")
         # 24 -> 12
         self.pool1 = MaxPooling2D((2, 2))
         # 12 -> 10
-        self.conv2 = Conv2D((hid_dim+3) // 4, 3, activation='relu')
+        self.conv2 = Conv2D((hid_dim + 3) // 4, 3, activation="relu")
         # 10 -> 5
         self.pool2 = MaxPooling2D((2, 2))
         # 5 -> 3
-        self.conv3 = Conv2D((hid_dim+1) // 2, 3, activation='relu')
+        self.conv3 = Conv2D((hid_dim + 1) // 2, 3, activation="relu")
         # 3 -> 1
-        self.conv4 = Conv2D(hid_dim, 3, activation='relu')
+        self.conv4 = Conv2D(hid_dim, 3, activation="relu")
         self.flatten = Flatten()
 
     def call(self, x):
@@ -30,15 +42,17 @@ class Encoder(keras.Model):
 
 
 class Decoder(keras.Model):
-    def __init__(self, hid_dim = 32):
+    """Decodes hidden representation vector of dimension `hid_dim` to MNIST-like image using deconvolutions"""
+
+    def __init__(self, hid_dim=32):
         super().__init__()
         self.unflatten = Reshape((1, 1, -1))
-        self.uconv1 = UpConv2D((hid_dim+1) // 2, 3, activation='relu')
-        self.uconv2 = UpConv2D((hid_dim+3) // 4, 3, activation='relu')
-        self.upool3 = UpConv2D((hid_dim+3) // 4, 2, strides=2, activation='relu')
-        self.uconv3 = UpConv2D((hid_dim+7) // 8, 3, activation='relu')
-        self.upool4 = UpConv2D((hid_dim+7) // 8, 2, strides=2, activation='relu')
-        self.uconv4 = UpConv2D(1, 5, activation='relu')
+        self.uconv1 = UpConv2D((hid_dim + 1) // 2, 3, activation="relu")
+        self.uconv2 = UpConv2D((hid_dim + 3) // 4, 3, activation="relu")
+        self.upool3 = UpConv2D((hid_dim + 3) // 4, 2, strides=2, activation="relu")
+        self.uconv3 = UpConv2D((hid_dim + 7) // 8, 3, activation="relu")
+        self.upool4 = UpConv2D((hid_dim + 7) // 8, 2, strides=2, activation="relu")
+        self.uconv4 = UpConv2D(1, 5, activation="relu")
 
     def call(self, x):
         x = self.uconv1(self.unflatten(x))
@@ -48,7 +62,9 @@ class Decoder(keras.Model):
 
 
 class Autoencoder(keras.Model):
-    def __init__(self, hid_dim = 32):
+    """MNIST autoencoder that uses convolutional encoder and deconvolutional decoder"""
+
+    def __init__(self, hid_dim=32):
         super().__init__()
         self.encoder = Encoder(hid_dim)
         self.decoder = Decoder(hid_dim)

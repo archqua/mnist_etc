@@ -1,0 +1,8 @@
+[flake8]
+ignore =
+    # line too long
+    E501,
+    # whitespace before ':'
+    E203,
+    # unused import
+    # F401,
