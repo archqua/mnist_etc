@@ -4,5 +4,7 @@ ignore =
     E501,
     # whitespace before ':'
     E203,
-    # unused import
-    # F401,
+per-file-ignores =
+    # unused imports
+    __init__.py: F401
+    **/__init__.py: F401
