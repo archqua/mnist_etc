@@ -1,12 +1,15 @@
-#!/usr/bin/env python3
-
 import os
 
 import tensorflow as tf
-import models
 
 # import tqdm # fails smh
 from tqdm.autonotebook import tqdm
+
+# import .names  # invalid
+import train.names as names
+import train.parameters as parameters
+from models import Autoencoder
+
 
 if __name__ == "__main__":
     mnist = tf.keras.datasets.mnist
@@ -26,7 +29,7 @@ if __name__ == "__main__":
         [X_val[val_masks[i, ...]][:n_examples, ...] for i in range(10)]
     )
 
-    batch_size = 32
+    batch_size = parameters.batch_size
     train_data = (
         tf.data.Dataset.from_tensor_slices((X_train, y_train))
         .shuffle(10000)
@@ -34,14 +37,14 @@ if __name__ == "__main__":
     )
     val_data = tf.data.Dataset.from_tensor_slices((X_val, y_val)).batch(batch_size)
 
-    ae = models.Autoencoder()
+    ae = Autoencoder()
     lo = tf.keras.losses.MeanSquaredError()
     opt = tf.keras.optimizers.Adam()
 
     train_loss = tf.keras.metrics.Mean("train_loss")
 
     @tf.function
-    def train_step(images):
+    def _train_step(images):
         with tf.GradientTape() as tape:
             reconstruction = ae(images, training=True)
             loss = lo(images, reconstruction)
@@ -53,14 +56,14 @@ if __name__ == "__main__":
     val_loss = tf.keras.metrics.Mean("val_loss")
 
     @tf.function
-    def val_step(images):
+    def _val_step(images):
         reconstruction = ae(images, training=True)
         loss = lo(images, reconstruction)
 
         val_loss(loss)
 
-    if not os.path.exists("artifacts"):
-        os.mkdir("artifacts")
+    if not os.path.exists(names.artifacts):
+        os.mkdir(names.artifacts)
     EPOCHS = 2
 
     for epoch in range(EPOCHS):
@@ -69,16 +72,16 @@ if __name__ == "__main__":
 
         print(f"training epoch {epoch + 1} in {EPOCHS}")
         for images, labels in tqdm(train_data):
-            train_step(images)
+            _train_step(images)
         for images, labels in val_data:
-            val_step(images)
+            _val_step(images)
 
         print(f"train loss: {train_loss.result()}, validation loss: {val_loss.result()}")
 
         indices = tf.random.uniform(
             shape=(10,), minval=0, maxval=n_examples, dtype=tf.int32
         )
-        picdir = f"artifacts/{epoch+1}"
+        picdir = names.ae_training_examples(epoch)
         if not os.path.exists(picdir):
             # TODO handle permission denied?
             os.makedirs(picdir)
@@ -86,8 +89,8 @@ if __name__ == "__main__":
         for digit, index in zip(range(10), indices):
             img = val_examples[digit : digit + 1, index, ...]
             rec = ae(img)
-            tf.keras.utils.save_img(f"artifacts/{epoch+1}/orig_{digit}.png", img[0, ...])
-            tf.keras.utils.save_img(f"artifacts/{epoch+1}/rec_{digit}.png", rec[0, ...])
+            tf.keras.utils.save_img(os.path.join(picdir, "orig_{digit}.png"), img[0, ...])
+            tf.keras.utils.save_img(os.path.join(picdir, "rec_{digit}.png"), rec[0, ...])
 
-    print("saving autoencoder weights into artifacts/weights.h5")
-    ae.save_weights("artifacts/weights.h5")
+    print("saving autoencoder weights into " + names.ae_weights)
+    ae.save_weights(names.ae_weights)

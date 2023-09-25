@@ -11,8 +11,6 @@ from keras.layers import (
     # Activation,
 )
 
-# UpConv2D = Conv2DTranspose
-
 
 class Encoder(keras.Model):
     """Encodes MNIST image into hidden representation vector of dimension `hid_dim` using convolutions"""
