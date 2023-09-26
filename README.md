@@ -14,3 +14,13 @@ and `artifacts/clsf_fc_weights.h5`.
 During autoencoder's training example digit images -- original and reconstructed --
 are saved under names `orig_{digit}.png` and `rec_{digit}.png` in
 `artifacts/ae_training_examples_{epoch}`.
+
+
+# TODO
+Minor:
+- fix `poetry build`
+
+Major:
+- automatic docgen with sphinx and github actions
+- hill climbing reconstruciton based on certainty levels
+- `tensorflow.privacy` to break hill climbing reconstruction
