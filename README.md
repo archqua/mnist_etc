@@ -22,5 +22,5 @@ Minor:
 
 Major:
 - automatic docgen with sphinx and github actions
-- hill climbing reconstruciton based on certainty levels
+- hill climbing reconstruction based on certainty levels
 - `tensorflow.privacy` to break hill climbing reconstruction
