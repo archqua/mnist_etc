@@ -63,12 +63,11 @@ if __name__ == "__main__":
 
     if not os.path.exists(names.artifacts):
         raise FileNotFoundError(
-            "directory `artifacts` must exist and contain `{names.ae_weights}` after running train/autoencoder"
+            f"directory `{names.artifacts}` must exist and contain"
+            + f"`{os.path.basename(names.ae_weights)}` after running train/autoencoder"
         )
     if not os.path.exists(names.ae_weights):
-        raise FileNotFoundError(
-            "file `{names.ae_weights}` not found in directory `{names.artifacts}`"
-        )
+        raise FileNotFoundError("file `{names.ae_weights}` not found")
     EPOCHS = 2
 
     for epoch in range(EPOCHS):
@@ -88,5 +87,5 @@ if __name__ == "__main__":
             f"train accuracy: {train_acc.result():.3f}, validation accuracy: {val_acc.result():.3f}"
         )
 
-    print("saving classifier FC weights into artifacts/clsf_fc_weights.h5")
-    clsf.save_weights("artifacts/clsf_fc_weights.h5")
+    print("saving classifier FC weights into " + names.clsf_fc_weights)
+    clsf.save_weights(names.clsf_fc_weights)

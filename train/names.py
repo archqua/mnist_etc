@@ -8,3 +8,4 @@ def ae_training_examples(epoch, plus_one=True):
 
 
 ae_weights = os.path.join(artifacts, "ae_weights.h5")
+clsf_fc_weights = os.path.join(artifacts, "clsf_fc_weights.h5")
