@@ -1,8 +1,6 @@
 # import tensorflow as tf
+from keras.layers import Dense
 from tensorflow import keras
-from keras.layers import (
-    Dense,
-)
 
 
 def Linear(out_dim=10, activation=None) -> keras.Model:

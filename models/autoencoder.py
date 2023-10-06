@@ -1,15 +1,8 @@
 # import tensorflow as tf
+from keras.layers import Conv2D
+from keras.layers import Conv2DTranspose as UpConv2D  # Dense,; Resizing,; Activation,
+from keras.layers import Flatten, MaxPooling2D, Reshape
 from tensorflow import keras
-from keras.layers import (
-    # Dense,
-    Conv2D,
-    Conv2DTranspose as UpConv2D,
-    MaxPooling2D,
-    Flatten,
-    Reshape,
-    # Resizing,
-    # Activation,
-)
 
 
 class Encoder(keras.Model):

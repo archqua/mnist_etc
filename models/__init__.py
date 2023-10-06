@@ -1,2 +1,2 @@
-from .autoencoder import Encoder, Decoder, Autoencoder
+from .autoencoder import Autoencoder, Decoder, Encoder
 from .classifier import Linear

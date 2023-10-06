@@ -10,7 +10,6 @@ import train.names as names
 import train.parameters as parameters
 from models import Autoencoder
 
-
 if __name__ == "__main__":
     mnist = tf.keras.datasets.mnist
 
