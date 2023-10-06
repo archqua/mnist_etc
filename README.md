@@ -1,12 +1,12 @@
 # mnist_etc
 This is for MLOps course.
 
-Currently there are two train loops in `train` directory:
+Currently there are two train loops in `train_` directory:
 `autoencoder.py` and `classifier.py` to train
 a simple convolution-deconvolution autoencoder and
-a semi-linear, based on autoencoder's hidden representation, classifier.
+a semi-linear classifier, based on autoencoder's hidden representation.
 These should be run as `[poetry run] python3 -m train.{loop}`
-from project's root directory.
+from project's root directory or via `[poetry run] python3 train.py`.
 Run classifier's training only when autoencoder's training has finished.
 
 Resulting weights after two epochs are saved in `artifacts/ae_weights.h5`
