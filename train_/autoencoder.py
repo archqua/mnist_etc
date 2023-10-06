@@ -6,11 +6,14 @@ import tensorflow as tf
 from tqdm.autonotebook import tqdm
 
 # import .names  # invalid
-import train.names as names
-import train.parameters as parameters
+# import train.names as names
+# import train.parameters as parameters
+import train_.names as names
+import train_.parameters as parameters
 from models import Autoencoder
 
-if __name__ == "__main__":
+
+def main():
     mnist = tf.keras.datasets.mnist
 
     (X_train, y_train), (X_val, y_val) = mnist.load_data()
@@ -93,3 +96,7 @@ if __name__ == "__main__":
 
     print("saving autoencoder weights into " + names.ae_weights)
     ae.save_weights(names.ae_weights)
+
+
+if __name__ == "__main__":
+    main()

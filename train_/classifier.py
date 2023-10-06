@@ -6,11 +6,14 @@ import tensorflow as tf
 from tqdm.autonotebook import tqdm
 
 # import .names  # invalid
-import train.names as names
-import train.parameters as parameters
+# import train.names as names
+# import train.parameters as parameters
+import train_.names as names
+import train_.parameters as parameters
 from models import Autoencoder, Linear
 
-if __name__ == "__main__":
+
+def main():
     mnist = tf.keras.datasets.mnist
 
     (X_train, y_train), (X_val, y_val) = mnist.load_data()
@@ -88,3 +91,7 @@ if __name__ == "__main__":
 
     print("saving classifier FC weights into " + names.clsf_fc_weights)
     clsf.save_weights(names.clsf_fc_weights)
+
+
+if __name__ == "__main__":
+    main()
