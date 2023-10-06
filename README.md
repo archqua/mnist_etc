@@ -15,6 +15,9 @@ During autoencoder's training example digit images -- original and reconstructed
 are saved under names `orig_{digit}.png` and `rec_{digit}.png` in
 `artifacts/ae_training_examples_{epoch}`.
 
+Inference is done via running `[poetry run] python3 infer.py` and
+results are saved into `artifacts/clsf_inference.csv`.
+
 
 # TODO
 Minor:
