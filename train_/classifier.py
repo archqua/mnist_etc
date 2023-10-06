@@ -5,10 +5,7 @@ import tensorflow as tf
 # import tqdm # fails smh
 from tqdm.autonotebook import tqdm
 
-# import .names  # invalid
-# import train.names as names
-# import train.parameters as parameters
-import train_.names as names
+import names
 import train_.parameters as parameters
 from models import Autoencoder, Linear
 
@@ -28,6 +25,14 @@ def main():
         .batch(batch_size)
     )
     val_data = tf.data.Dataset.from_tensor_slices((X_val, y_val)).batch(batch_size)
+
+    if not os.path.exists(names.artifacts):
+        raise FileNotFoundError(
+            f"directory `{names.artifacts}` must exist and contain"
+            + f"`{os.path.basename(names.ae_weights)}` after running train/autoencoder"
+        )
+    if not os.path.exists(names.ae_weights):
+        raise FileNotFoundError(f"file `{names.ae_weights}` not found")
 
     ae = Autoencoder()
     ae.build(input_shape=(batch_size, 28, 28, 1))
@@ -63,13 +68,6 @@ def main():
         val_loss(loss)
         val_acc(labels, tf.math.argmax(pred, axis=1))
 
-    if not os.path.exists(names.artifacts):
-        raise FileNotFoundError(
-            f"directory `{names.artifacts}` must exist and contain"
-            + f"`{os.path.basename(names.ae_weights)}` after running train/autoencoder"
-        )
-    if not os.path.exists(names.ae_weights):
-        raise FileNotFoundError("file `{names.ae_weights}` not found")
     EPOCHS = 2
 
     for epoch in range(EPOCHS):

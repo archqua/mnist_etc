@@ -5,10 +5,7 @@ import tensorflow as tf
 # import tqdm # fails smh
 from tqdm.autonotebook import tqdm
 
-# import .names  # invalid
-# import train.names as names
-# import train.parameters as parameters
-import train_.names as names
+import names
 import train_.parameters as parameters
 from models import Autoencoder
 
