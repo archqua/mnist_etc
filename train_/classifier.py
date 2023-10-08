@@ -14,17 +14,23 @@ def main():
     mnist = tf.keras.datasets.mnist
 
     (X_train, y_train), (X_val, y_val) = mnist.load_data()
-    X_train, X_val = X_train / 255.0, X_val / 255.0
-    X_train = X_train[..., tf.newaxis].astype("float32")
-    X_val = X_val[..., tf.newaxis].astype("float32")
+
+    @tf.function
+    def _preproc(images, labels):
+        return tf.cast(images, tf.float32)[..., tf.newaxis] / 255.0, labels
 
     batch_size = parameters.batch_size
     train_data = (
         tf.data.Dataset.from_tensor_slices((X_train, y_train))
         .shuffle(X_train.shape[0])
+        .map(_preproc, num_parallel_calls=batch_size)
         .batch(batch_size)
     )
-    val_data = tf.data.Dataset.from_tensor_slices((X_val, y_val)).batch(batch_size)
+    val_data = (
+        tf.data.Dataset.from_tensor_slices((X_val, y_val))
+        .map(_preproc, num_parallel_calls=batch_size)
+        .batch(batch_size)
+    )
 
     if not os.path.exists(names.artifacts):
         raise FileNotFoundError(
@@ -62,7 +68,7 @@ def main():
     @tf.function
     def _val_step(images, labels):
         hidden = ae.encode(images)
-        pred = clsf(hidden, training=True)
+        pred = clsf(hidden, training=False)
         loss = lo(labels, pred)
 
         val_loss(loss)

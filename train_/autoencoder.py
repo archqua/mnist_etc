@@ -14,27 +14,40 @@ def main():
     mnist = tf.keras.datasets.mnist
 
     (X_train, y_train), (X_val, y_val) = mnist.load_data()
-    X_train, X_val = X_train / 255.0, X_val / 255.0
-    X_train = X_train[..., tf.newaxis].astype("float32")
-    X_val = X_val[..., tf.newaxis].astype("float32")
 
-    n_examples = 7
-    # train_masks = tf.constant([y_train == i for i in range(10)])
-    # train_examples = tf.constant(
-    #     [X_train[train_masks[i, ...]][:n_examples, ...] for i in range(10)]
-    # )
-    val_masks = tf.constant([y_val == i for i in range(10)])
-    val_examples = tf.constant(
-        [X_val[val_masks[i, ...]][:n_examples, ...] for i in range(10)]
-    )
+    @tf.function
+    def _preproc(images, labels):
+        return tf.cast(images, tf.float32)[..., tf.newaxis] / 255.0, labels
 
     batch_size = parameters.batch_size
     train_data = (
         tf.data.Dataset.from_tensor_slices((X_train, y_train))
         .shuffle(X_train.shape[0])
+        .map(_preproc, num_parallel_calls=batch_size)
         .batch(batch_size)
     )
-    val_data = tf.data.Dataset.from_tensor_slices((X_val, y_val)).batch(batch_size)
+    val_data = (
+        tf.data.Dataset.from_tensor_slices((X_val, y_val))
+        .map(_preproc, num_parallel_calls=batch_size)
+        .batch(batch_size)
+    )
+
+    n_examples = 7
+    # val_masks = tf.constant([y_val == i for i in range(10)])
+    val_examples = []
+    for i in range(10):
+        val_examples_i = []
+        for X_batch, y_batch in val_data:
+            mask = y_batch == i
+            val_examples_i.extend(list(X_batch[mask]))
+            if len(val_examples_i) >= n_examples:
+                val_examples_i = tf.stack(val_examples_i[:n_examples])
+                break
+        val_examples.append(val_examples_i)
+    val_examples = tf.stack(val_examples)
+    # val_examples = tf.constant(
+    #     [X_val[val_masks[i, ...]][:n_examples, ...] for i in range(10)]
+    # )
 
     ae = Autoencoder()
     lo = tf.keras.losses.MeanSquaredError()
@@ -56,7 +69,7 @@ def main():
 
     @tf.function
     def _val_step(images):
-        reconstruction = ae(images, training=True)
+        reconstruction = ae(images, training=False)
         loss = lo(images, reconstruction)
 
         val_loss(loss)
@@ -88,8 +101,14 @@ def main():
         for digit, index in zip(range(10), indices):
             img = val_examples[digit : digit + 1, index, ...]
             rec = ae(img)
-            tf.keras.utils.save_img(os.path.join(picdir, "orig_{digit}.png"), img[0, ...])
-            tf.keras.utils.save_img(os.path.join(picdir, "rec_{digit}.png"), rec[0, ...])
+            tf.keras.utils.save_img(
+                os.path.join(picdir, f"orig_{digit}.png"),
+                img[0, ...],
+            )
+            tf.keras.utils.save_img(
+                os.path.join(picdir, f"rec_{digit}.png"),
+                rec[0, ...],
+            )
 
     print("saving autoencoder weights into " + names.ae_weights)
     ae.save_weights(names.ae_weights)

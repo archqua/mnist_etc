@@ -15,15 +15,11 @@ if __name__ == "__main__":
     mnist = tf.keras.datasets.mnist
     (X_train, y_train), (X_val, y_val) = mnist.load_data()
 
-    # X_train, X_val = X_train / 255.0, X_val / 255.0
-    # X_train = X_train[..., tf.newaxis].astype('float32')
-    # X_val = X_val[..., tf.newaxis].astype('float32')
     @tf.function
     def _preproc(images, labels):
-        return tf.cast(images, tf.float32)[..., tf.newaxis] / 255.0, images
+        return tf.cast(images, tf.float32)[..., tf.newaxis] / 255.0, labels
 
     batch_size = 64
-    # batch_size = 3
     train_data = (
         tf.data.Dataset.from_tensor_slices((X_train, y_train))
         .shuffle(X_train.shape[0])
