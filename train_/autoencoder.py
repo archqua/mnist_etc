@@ -31,7 +31,7 @@ def main():
     batch_size = parameters.batch_size
     train_data = (
         tf.data.Dataset.from_tensor_slices((X_train, y_train))
-        .shuffle(10000)
+        .shuffle(X_train.shape[0])
         .batch(batch_size)
     )
     val_data = tf.data.Dataset.from_tensor_slices((X_val, y_val)).batch(batch_size)

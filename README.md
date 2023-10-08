@@ -18,6 +18,11 @@ are saved under names `orig_{digit}.png` and `rec_{digit}.png` in
 Inference is done via running `[poetry run] python3 infer.py` and
 results are saved into `artifacts/clsf_inference.csv`.
 
+Reconstruction via
+[https://www.sciencedirect.com/science/article/abs/pii/S0031320309003380](Bayessian hill climbing)
+is examined in `noprotect_reconstruction.py`.
+Run as `[poetry run] python3 noprotect_reconstruction.py`.
+
 
 # TODO
 Minor:
@@ -25,5 +30,4 @@ Minor:
 
 Major:
 - automatic docgen with sphinx and github actions
-- hill climbing reconstruction based on certainty levels
 - `tensorflow.privacy` to break hill climbing reconstruction

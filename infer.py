@@ -40,6 +40,7 @@ if __name__ == "__main__":
 
     inference = []
 
+    # can't append to list in tf.function
     # @tf.function
     def _step(images, labels):
         hidden = ae.encode(images)
