@@ -11,8 +11,6 @@ import names
 import train_.parameters as parameters
 from models import Autoencoder
 
-# import tensorflow_privacy.optimizers.dp_optimizer
-
 
 def main(epochs=2, use_tf_privacy=False):
     mnist = tf.keras.datasets.mnist

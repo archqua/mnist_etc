@@ -19,9 +19,22 @@ Inference is done via running `[poetry run] python3 infer.py` and
 results are saved into `artifacts/clsf_inference.csv`.
 
 Reconstruction via
-[https://www.sciencedirect.com/science/article/abs/pii/S0031320309003380](Bayessian hill climbing)
+[Bayessian hill climbing](https://www.sciencedirect.com/science/article/abs/pii/S0031320309003380)
 is examined in `noprotect_reconstruction.py`.
 Run as `[poetry run] python3 noprotect_reconstruction.py`.
+
+
+# Dependencies
+
+## Build
+- `poetry`
+
+## Run
+- `python` version `>=3.9,<3.12`
+- `tensorflow` version `<2.14.0`
+- `tqdm` version `^4.66.1`
+- `pillow` version `^10.0.1`
+- `tensorflow-privacy` version `<0.8.11`
 
 
 # TODO
