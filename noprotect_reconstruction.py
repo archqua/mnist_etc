@@ -1,17 +1,20 @@
+import argparse
 import os
-
-import tensorflow as tf
-from tensorflow.keras.losses import cosine_similarity
 
 # fails smh
 # import tqdm
 from tqdm.autonotebook import tqdm
 
-import names
-from hill_climbing import bayessian_reconstruction
-from models import Autoencoder, Linear
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "1"
+import tensorflow as tf  # noqa
+from tensorflow.keras.losses import cosine_similarity  # noqa
 
-if __name__ == "__main__":
+import names  # noqa
+from hill_climbing import bayessian_reconstruction  # noqa
+from models import Autoencoder, Linear  # noqa
+
+
+def main(use_tf_privacy=False):
     mnist = tf.keras.datasets.mnist
     (X_train, y_train), (X_val, y_val) = mnist.load_data()
 
@@ -33,22 +36,25 @@ if __name__ == "__main__":
         .batch(batch_size)
     )
 
+    prefix = "tf_private_" if use_tf_privacy else ""
     if not os.path.exists(names.artifacts):
         raise FileNotFoundError(
             f"directory `{names.artifacts}` must exist and contain"
-            + f"`{os.path.basename(names.ae_weights)}` after running train/autoencoder"
+            + f"`{os.path.basename(names.ae_weights())}` after running train/autoencoder"
         )
-    if not os.path.exists(names.ae_weights):
-        raise FileNotFoundError(f"file `{names.ae_weights}` not found")
-    if not os.path.exists(names.clsf_fc_weights):
-        raise FileNotFoundError(f"file `{names.ae_weights}` not found")
+    if not os.path.exists(names.ae_weights(prefix="")):
+        raise FileNotFoundError(f"file `{names.ae_weights()}` not found")
+    if not os.path.exists(names.clsf_fc_weights(prefix=prefix)):
+        raise FileNotFoundError(
+            f"file `{names.clsf_fc_weights(prefix=prefix)}` not found"
+        )
     hid_dim = 32
     ae = Autoencoder()
     ae.build(input_shape=(batch_size, 28, 28, 1))
-    ae.load_weights(names.ae_weights)
+    ae.load_weights(names.ae_weights(prefix=""))
     clsf = Linear(activation=None)
     clsf.build(input_shape=(batch_size, hid_dim))
-    clsf.load_weights(names.clsf_fc_weights)
+    clsf.load_weights(names.clsf_fc_weights(prefix=prefix))
 
     @tf.function
     def _mse(trg, inf, axis=-1):
@@ -65,7 +71,7 @@ if __name__ == "__main__":
         return wrapped
 
     # _mse_sim = _similarityFn(_mse)
-    # @tf.function
+    @tf.function
     @_similarityFn
     def _mse_sim(template, samples):
         return _mse(template, samples)
@@ -85,8 +91,9 @@ if __name__ == "__main__":
             (batch_hid - X_hid_mean[tf.newaxis, ...]) ** 2, axis=0
         )
     X_hid_var /= X_train.shape[0]
-    X_hid_std = tf.math.sqrt(X_hid_var)
+    # X_hid_std = tf.math.sqrt(X_hid_var)
 
+    print("reconstructing samples")
     for images, labels in val_data.take(1):
         img_hid = ae.encode(images)
         img_scores = clsf(img_hid)
@@ -119,3 +126,18 @@ if __name__ == "__main__":
             f"reconstruction direct:  \t{tf.math.reduce_mean(direct_cos_similarities):.3f}"
         )
         print(f"second order perceptual:\t{tf.math.reduce_mean(so_cos_similarities):.3f}")
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(
+        description="Bayessian hill-climbing digit image reconstruction"
+    )
+    parser.add_argument(
+        "-p",
+        "--private",
+        action="store_true",
+        dest="use_tf_privacy",
+        default=False,
+    )
+    args = parser.parse_args()
+    main(use_tf_privacy=args.use_tf_privacy)

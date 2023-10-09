@@ -1,6 +1,8 @@
+import argparse
 import os
 
 import tensorflow as tf
+import tensorflow_privacy as tf_privacy
 
 # import tqdm # fails smh
 from tqdm.autonotebook import tqdm
@@ -9,8 +11,10 @@ import names
 import train_.parameters as parameters
 from models import Autoencoder
 
+# import tensorflow_privacy.optimizers.dp_optimizer
 
-def main():
+
+def main(epochs=2, use_tf_privacy=False):
     mnist = tf.keras.datasets.mnist
 
     (X_train, y_train), (X_val, y_val) = mnist.load_data()
@@ -51,7 +55,14 @@ def main():
 
     ae = Autoencoder()
     lo = tf.keras.losses.MeanSquaredError()
-    opt = tf.keras.optimizers.Adam()
+    if use_tf_privacy:
+        opt = tf_privacy.DPKerasAdamOptimizer(
+            l2_norm_clip=1.0,
+            noise_multiplier=0.01,
+            num_microbatches=1,
+        )
+    else:
+        opt = tf.keras.optimizers.Adam()
 
     train_loss = tf.keras.metrics.Mean("train_loss")
 
@@ -60,8 +71,11 @@ def main():
         with tf.GradientTape() as tape:
             reconstruction = ae(images, training=True)
             loss = lo(images, reconstruction)
-        gradients = tape.gradient(loss, ae.trainable_variables)
-        opt.apply_gradients(zip(gradients, ae.trainable_variables))
+        if use_tf_privacy:
+            opt.minimize(loss, ae.trainable_variables, tape=tape)
+        else:
+            gradients = tape.gradient(loss, ae.trainable_variables)
+            opt.apply_gradients(zip(gradients, ae.trainable_variables))
 
         train_loss(loss)
 
@@ -74,15 +88,15 @@ def main():
 
         val_loss(loss)
 
+    prefix = "tf_private_" if use_tf_privacy else ""
     if not os.path.exists(names.artifacts):
         os.mkdir(names.artifacts)
-    EPOCHS = 2
 
-    for epoch in range(EPOCHS):
+    for epoch in range(epochs):
+        print(f"training epoch {epoch + 1} in {epochs}")
         train_loss.reset_states()
         val_loss.reset_states()
 
-        print(f"training epoch {epoch + 1} in {EPOCHS}")
         for images, labels in tqdm(train_data):
             _train_step(images)
         for images, labels in val_data:
@@ -93,7 +107,7 @@ def main():
         indices = tf.random.uniform(
             shape=(10,), minval=0, maxval=n_examples, dtype=tf.int32
         )
-        picdir = names.ae_training_examples(epoch)
+        picdir = names.ae_training_examples(epoch, prefix=prefix)
         if not os.path.exists(picdir):
             # TODO handle permission denied?
             os.makedirs(picdir)
@@ -110,9 +124,25 @@ def main():
                 rec[0, ...],
             )
 
-    print("saving autoencoder weights into " + names.ae_weights)
-    ae.save_weights(names.ae_weights)
+    print("saving autoencoder weights into " + names.ae_weights(prefix=prefix))
+    ae.save_weights(names.ae_weights(prefix=prefix))
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description="train autoencoder")
+    parser.add_argument(
+        "-p",
+        "--private",
+        action="store_true",
+        dest="use_tf_privacy",
+        default=False,
+    )
+    parser.add_argument(
+        "-e",
+        "--epochs",
+        dest="epochs",
+        default=2,
+        type=int,
+    )
+    args = parser.parse_args()
+    main(args.epochs, use_tf_privacy=args.use_tf_privacy)

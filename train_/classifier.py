@@ -1,6 +1,8 @@
+import argparse
 import os
 
 import tensorflow as tf
+import tensorflow_privacy as tf_privacy
 
 # import tqdm # fails smh
 from tqdm.autonotebook import tqdm
@@ -10,7 +12,7 @@ import train_.parameters as parameters
 from models import Autoencoder, Linear
 
 
-def main():
+def main(epochs=2, use_tf_privacy=False):
     mnist = tf.keras.datasets.mnist
 
     (X_train, y_train), (X_val, y_val) = mnist.load_data()
@@ -32,20 +34,33 @@ def main():
         .batch(batch_size)
     )
 
+    prefix = "tf_private_" if use_tf_privacy else ""
     if not os.path.exists(names.artifacts):
         raise FileNotFoundError(
             f"directory `{names.artifacts}` must exist and contain"
-            + f"`{os.path.basename(names.ae_weights)}` after running train/autoencoder"
+            + f"`{os.path.basename(names.ae_weights())}` after running train/autoencoder"
         )
-    if not os.path.exists(names.ae_weights):
-        raise FileNotFoundError(f"file `{names.ae_weights}` not found")
+    if not os.path.exists(names.ae_weights(prefix="")):
+        raise FileNotFoundError(f"file `{names.ae_weights()}` not found")
 
     ae = Autoencoder()
     ae.build(input_shape=(batch_size, 28, 28, 1))
-    ae.load_weights(names.ae_weights)
+    ae.load_weights(names.ae_weights(prefix=""))
     clsf = Linear(activation=None)
-    lo = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
-    opt = tf.keras.optimizers.Adam()
+    if use_tf_privacy:
+        lo = tf.keras.losses.SparseCategoricalCrossentropy(
+            from_logits=True,
+            reduction=tf.losses.Reduction.NONE,
+        )
+        _privacy_scale = batch_size
+        opt = tf_privacy.DPKerasAdamOptimizer(
+            l2_norm_clip=1.0,
+            noise_multiplier=0.025 * _privacy_scale,
+            num_microbatches=1 * _privacy_scale,
+        )
+    else:
+        lo = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
+        opt = tf.keras.optimizers.Adam()
 
     train_loss = tf.keras.metrics.Mean("train_loss")
     train_acc = tf.keras.metrics.Accuracy()
@@ -56,8 +71,11 @@ def main():
         with tf.GradientTape() as tape:
             pred = clsf(hidden, training=True)
             loss = lo(labels, pred)
-        gradients = tape.gradient(loss, clsf.trainable_variables)
-        opt.apply_gradients(zip(gradients, clsf.trainable_variables))
+        if use_tf_privacy:
+            opt.minimize(loss, clsf.trainable_variables, tape=tape)
+        else:
+            gradients = tape.gradient(loss, clsf.trainable_variables)
+            opt.apply_gradients(zip(gradients, clsf.trainable_variables))
 
         train_loss(loss)
         train_acc(labels, tf.math.argmax(pred, axis=1))
@@ -74,15 +92,13 @@ def main():
         val_loss(loss)
         val_acc(labels, tf.math.argmax(pred, axis=1))
 
-    EPOCHS = 2
-
-    for epoch in range(EPOCHS):
+    for epoch in range(epochs):
         train_loss.reset_states()
         train_acc.reset_states()
         val_loss.reset_states()
         val_acc.reset_states()
 
-        print(f"training epoch {epoch + 1} in {EPOCHS}")
+        print(f"training epoch {epoch + 1} in {epochs}")
         for images, labels in tqdm(train_data):
             _train_step(images, labels)
         for images, labels in val_data:
@@ -93,9 +109,25 @@ def main():
             f"train accuracy: {train_acc.result():.3f}, validation accuracy: {val_acc.result():.3f}"
         )
 
-    print("saving classifier FC weights into " + names.clsf_fc_weights)
-    clsf.save_weights(names.clsf_fc_weights)
+    print("saving classifier FC weights into " + names.clsf_fc_weights(prefix=prefix))
+    clsf.save_weights(names.clsf_fc_weights(prefix=prefix))
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description="train autoencoder")
+    parser.add_argument(
+        "-p",
+        "--private",
+        action="store_true",
+        dest="use_tf_privacy",
+        default=False,
+    )
+    parser.add_argument(
+        "-e",
+        "--epochs",
+        dest="epochs",
+        default=2,
+        type=int,
+    )
+    args = parser.parse_args()
+    main(args.epochs, use_tf_privacy=args.use_tf_privacy)

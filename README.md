@@ -5,7 +5,7 @@ Currently there are two train loops in `train_` directory:
 `autoencoder.py` and `classifier.py` to train
 a simple convolution-deconvolution autoencoder and
 a semi-linear classifier, based on autoencoder's hidden representation.
-These should be run as `[poetry run] python3 -m train.{loop}`
+These should be run as `[poetry run] python3 -m train_.{loop}`
 from project's root directory or via `[poetry run] python3 train.py`.
 Run classifier's training only when autoencoder's training has finished.
 

@@ -7,10 +7,11 @@ license = "BSD3"
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = ">=3.9, <3.12"
-tensorflow = "^2.13.0"
+python = ">=3.9,<3.12"
+tensorflow = "<2.14.0"
 tqdm = "^4.66.1"
 pillow = "^10.0.1"
+tensorflow-privacy = "<0.8.11"
 
 
 [tool.poetry.group.dev.dependencies]
