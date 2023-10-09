@@ -22,19 +22,19 @@ if __name__ == "__main__":
     if not os.path.exists(names.artifacts):
         raise FileNotFoundError(
             f"directory `{names.artifacts}` must exist and contain"
-            + f"`{os.path.basename(names.ae_weights)}` after running train/autoencoder"
+            + f"`{os.path.basename(names.ae_weights())}` after running train/autoencoder"
         )
-    if not os.path.exists(names.ae_weights):
-        raise FileNotFoundError(f"file `{names.ae_weights}` not found")
-    if not os.path.exists(names.clsf_fc_weights):
-        raise FileNotFoundError(f"file `{names.clsf_fc_weights} not found`")
+    if not os.path.exists(names.ae_weights()):
+        raise FileNotFoundError(f"file `{names.ae_weights()}` not found")
+    if not os.path.exists(names.clsf_fc_weights()):
+        raise FileNotFoundError(f"file `{names.clsf_fc_weights()} not found`")
 
     ae = Autoencoder()
     ae.build(input_shape=(batch_size, 28, 28, 1))
-    ae.load_weights(names.ae_weights)
+    ae.load_weights(names.ae_weights())
     clsf = Linear(activation=None)
     clsf.build(input_shape=(batch_size, ae.hid_dim))
-    clsf.load_weights(names.clsf_fc_weights)
+    clsf.load_weights(names.clsf_fc_weights())
 
     acc = tf.keras.metrics.Accuracy()
 
@@ -56,7 +56,7 @@ if __name__ == "__main__":
 
     print(f"inference (validation) accuracy is {acc.result():.3f}")
 
-    print(f"saving inference results into {names.clsf_inference}")
-    with open(names.clsf_inference, "w") as file:
+    print(f"saving inference results into {names.clsf_inference()}")
+    with open(names.clsf_inference(), "w") as file:
         for inf in inference:
             file.write(f"{inf}\n")
