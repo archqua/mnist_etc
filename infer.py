@@ -13,11 +13,25 @@ if __name__ == "__main__":
     mnist = tf.keras.datasets.mnist
 
     Xy_train, (X_val, y_val) = mnist.load_data()
-    X_val = X_val / 255.0
-    X_val = X_val[..., tf.newaxis].astype("float32")
+    # X_val = X_val / 255.0
+    # X_val = X_val[..., tf.newaxis].astype("float32")
+
+    @tf.function
+    def _preproc(images, labels):
+        return tf.cast(images, tf.float32)[..., tf.newaxis] / 255.0, labels
 
     batch_size = parameters.batch_size
     val_data = tf.data.Dataset.from_tensor_slices((X_val, y_val)).batch(batch_size)
+    batch_size = parameters.batch_size
+    dataset = (
+        tf.data.Dataset.from_tensor_slices((X_val, y_val))
+        .shuffle(X_val.shape[0])
+        .map(_preproc, num_parallel_calls=batch_size)
+    )
+    left_size = int((dataset.cardinality().numpy() * 0.9) // 32 * 32)
+    train_data, val_data = tf.keras.utils.split_dataset(dataset, left_size=left_size)
+    train_data = train_data.batch(batch_size)
+    val_data = val_data.batch(batch_size)
 
     if not os.path.exists(names.artifacts):
         raise FileNotFoundError(

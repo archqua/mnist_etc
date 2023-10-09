@@ -11,8 +11,11 @@ import names
 import train_.parameters as parameters
 from models import Autoencoder
 
+default_epochs = 3
+default_privacy = False
 
-def main(epochs=2, use_tf_privacy=False):
+
+def main(epochs=default_epochs, use_tf_privacy=default_privacy):
     mnist = tf.keras.datasets.mnist
 
     (X_train, y_train), (X_val, y_val) = mnist.load_data()
@@ -133,13 +136,13 @@ if __name__ == "__main__":
         "--private",
         action="store_true",
         dest="use_tf_privacy",
-        default=False,
+        default=default_privacy,
     )
     parser.add_argument(
         "-e",
         "--epochs",
         dest="epochs",
-        default=2,
+        default=default_epochs,
         type=int,
     )
     args = parser.parse_args()

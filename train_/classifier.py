@@ -11,8 +11,11 @@ import names
 import train_.parameters as parameters
 from models import Autoencoder, Linear
 
+default_epochs = 6
+default_privacy = False
 
-def main(epochs=2, use_tf_privacy=False):
+
+def main(epochs=default_epochs, use_tf_privacy=default_privacy):
     mnist = tf.keras.datasets.mnist
 
     (X_train, y_train), (X_val, y_val) = mnist.load_data()
@@ -22,17 +25,26 @@ def main(epochs=2, use_tf_privacy=False):
         return tf.cast(images, tf.float32)[..., tf.newaxis] / 255.0, labels
 
     batch_size = parameters.batch_size
-    train_data = (
-        tf.data.Dataset.from_tensor_slices((X_train, y_train))
-        .shuffle(X_train.shape[0])
-        .map(_preproc, num_parallel_calls=batch_size)
-        .batch(batch_size)
-    )
-    val_data = (
+    dataset = (
         tf.data.Dataset.from_tensor_slices((X_val, y_val))
+        .shuffle(X_val.shape[0])
         .map(_preproc, num_parallel_calls=batch_size)
-        .batch(batch_size)
     )
+    left_size = int((dataset.cardinality().numpy() * 0.9) // 32 * 32)
+    train_data, val_data = tf.keras.utils.split_dataset(dataset, left_size=left_size)
+    train_data = train_data.batch(batch_size)
+    val_data = val_data.batch(batch_size)
+    # train_data = (
+    #     tf.data.Dataset.from_tensor_slices((X_train, y_train))
+    #     .shuffle(X_train.shape[0])
+    #     .map(_preproc, num_parallel_calls=batch_size)
+    #     .batch(batch_size)
+    # )
+    # val_data = (
+    #     tf.data.Dataset.from_tensor_slices((X_val, y_val))
+    #     .map(_preproc, num_parallel_calls=batch_size)
+    #     .batch(batch_size)
+    # )
 
     prefix = "tf_private_" if use_tf_privacy else ""
     if not os.path.exists(names.artifacts):
@@ -120,13 +132,13 @@ if __name__ == "__main__":
         "--private",
         action="store_true",
         dest="use_tf_privacy",
-        default=False,
+        default=default_privacy,
     )
     parser.add_argument(
         "-e",
         "--epochs",
         dest="epochs",
-        default=2,
+        default=default_epochs,
         type=int,
     )
     args = parser.parse_args()
