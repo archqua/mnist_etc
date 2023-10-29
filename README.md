@@ -43,4 +43,5 @@ Minor:
 
 Major:
 - automatic docgen with sphinx and github actions
+- use `hydra` for parameterization
 - `tensorflow.privacy` to break hill climbing reconstruction
