@@ -1,8 +1,10 @@
 import argparse
 import os
+import pickle
 
 import tensorflow as tf
 import tensorflow_privacy as tf_privacy
+from dvc.api import DVCFileSystem
 
 # import tqdm # fails smh
 from tqdm.autonotebook import tqdm
@@ -16,9 +18,13 @@ default_privacy = False
 
 
 def main(epochs=default_epochs, use_tf_privacy=default_privacy):
-    mnist = tf.keras.datasets.mnist
+    # mnist = tf.keras.datasets.mnist
+    fs = DVCFileSystem()
+    fs.get("data", "data", recursive=True)
 
-    (X_train, y_train), (X_val, y_val) = mnist.load_data()
+    X_train, y_train = pickle.load(open("data/train.pkl", "rb"))
+    X_val, y_val = pickle.load(open("data/val.pkl", "rb"))
+    # (X_train, y_train), (X_val, y_val) = mnist.load_data()
 
     @tf.function
     def _preproc(images, labels):

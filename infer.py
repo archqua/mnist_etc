@@ -17,7 +17,7 @@ if __name__ == "__main__":
     fs.get("data", "data", recursive=True)
 
     Xy_train = pickle.load(open("data/train.pkl", "rb"))
-    (X_val, y_val) = pickle.load(open("data/val.pkl", "rb"))
+    X_val, y_val = pickle.load(open("data/val.pkl", "rb"))
     # X_val = X_val / 255.0
     # X_val = X_val[..., tf.newaxis].astype("float32")
 
