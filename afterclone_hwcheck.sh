@@ -5,7 +5,7 @@ if [[ -z "$CONDA_PREFIX" ]]; then
   python3 -m venv env
   . env/bin/activate
 else
-  conda create -p ./env python=3.9
+  conda create -p ./env -y python=3.9
   conda activate ./env
 fi
 
