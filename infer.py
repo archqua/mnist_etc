@@ -1,8 +1,8 @@
 import os
 import pickle
 
+import dvc.api
 import tensorflow as tf
-from dvc.api import DVCFileSystem
 
 # import tqdm # fails smh
 from tqdm.autonotebook import tqdm
@@ -13,11 +13,13 @@ from models import Autoencoder, Linear
 
 if __name__ == "__main__":
     # mnist = tf.keras.datasets.mnist
-    fs = DVCFileSystem()
+    # fs = DVCFileSystem()
     # fs.get("data", "data", recursive=True)
 
-    Xy_train = pickle.load(fs.open("data/train.pkl", "rb"))
-    X_val, y_val = pickle.load(fs.open("data/val.pkl", "rb"))
+    # with dvc.api.open("data/train.pkl", "rb") as fh:
+    #     Xy_train = pickle.load(fh)
+    with dvc.api.open("data/test.pkl", "rb") as fh:
+        X_val, y_val = pickle.load(fh)
     # X_val = X_val / 255.0
     # X_val = X_val[..., tf.newaxis].astype("float32")
 
