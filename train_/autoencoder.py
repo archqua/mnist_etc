@@ -20,10 +20,10 @@ default_privacy = False
 def main(epochs=default_epochs, use_tf_privacy=default_privacy):
     # mnist = tf.keras.datasets.mnist
     fs = DVCFileSystem()
-    fs.get("data", "data", recursive=True)
+    # fs.get("data", "data", recursive=True)
 
-    X_train, y_train = pickle.load(open("data/train.pkl", "rb"))
-    X_val, y_val = pickle.load(open("data/val.pkl", "rb"))
+    X_train, y_train = pickle.load(fs.open("data/train.pkl", "rb"))
+    X_val, y_val = pickle.load(fs.open("data/val.pkl", "rb"))
     # (X_train, y_train), (X_val, y_val) = mnist.load_data()
 
     @tf.function
