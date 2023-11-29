@@ -2,9 +2,11 @@ import argparse
 import os
 import pickle
 
-import dvc.api
 import tensorflow as tf
 import tensorflow_privacy as tf_privacy
+
+# import dvc.api
+from dvc.api import DVCFileSystem
 
 # import tqdm # fails smh
 from tqdm.autonotebook import tqdm
@@ -19,12 +21,16 @@ default_privacy = False
 
 def main(epochs=default_epochs, use_tf_privacy=default_privacy):
     # mnist = tf.keras.datasets.mnist
-    # fs = DVCFileSystem()
+    fs = DVCFileSystem()
     # fs.get("data", "data", recursive=True)
-
-    with dvc.api.open("data/train.pkl", "rb") as fh:
+    # X_train, y_train = pickle.load(open("data/train.pkl", "rb"))
+    # X_val, y_val = pickle.load(open("data/test.pkl", "rb"))
+    # repo = "https://github.com/archqua/mnist_etc"
+    # with dvc.api.open("data/train.pkl", repo=repo, mode="rb") as fh:
+    with fs.open("data/train.pkl", "rb") as fh:
         X_train, y_train = pickle.load(fh)
-    with dvc.api.open("data/test.pkl", "rb") as fh:
+    # # with dvc.api.open("data/test.pkl", repo=repo, mode="rb") as fh:
+    with fs.open("data/val.pkl", "rb") as fh:
         X_val, y_val = pickle.load(fh)
     # (X_train, y_train), (X_val, y_val) = mnist.load_data()
 
