@@ -162,6 +162,8 @@ cython_debug/
 # custom
 playground/
 artifacts/
+# hydra quirks
+/outputs
 # dvc
 /data
 /conf
