@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 
-# this is a very naive workaround conda issue
 if [[ -z "$CONDA_PREFIX" ]]; then
   python3 -m venv env
   . env/bin/activate
@@ -25,7 +24,6 @@ pre-commit run -a
 python train.py
 python infer.py
 
-# this is a very naive workaround conda issue
 if [[ -z "$CONDA_PREFIX" ]]; then
   deactivate
 else

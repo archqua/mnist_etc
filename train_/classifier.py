@@ -5,9 +5,6 @@ import pickle
 import tensorflow as tf
 import tensorflow_privacy as tf_privacy
 
-# import dvc.api
-from dvc.api import DVCFileSystem
-
 # import tqdm # fails smh
 from tqdm.autonotebook import tqdm
 
@@ -20,16 +17,9 @@ default_privacy = False
 
 
 def main(epochs=default_epochs, use_tf_privacy=default_privacy):
-    # mnist = tf.keras.datasets.mnist
-    fs = DVCFileSystem()
-    # fs.get("data", "data", recursive=True)
-    # repo = "https://github.com/archqua/mnist_etc"
-    # with dvc.api.open("data/train.pkl", mode="rb") as fh:
-    #     X_train, y_train = pickle.load(fh)
-    # with dvc.api.open("data/test.pkl", repo=repo, mode="rb") as fh:
-    with fs.open("data/val.pkl", "rb") as fh:
-        X_val, y_val = pickle.load(fh)
-    # (X_train, y_train), (X_val, y_val) = mnist.load_data()
+    if not os.path.exists("data"):
+        raise FileNotFoundError("directory data needs to be loaded via dvc")
+    X_val, y_val = pickle.load(open("data/val.pkl", "rb"))
 
     @tf.function
     def _preproc(images, labels):

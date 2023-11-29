@@ -1,8 +1,10 @@
 import os
 import pickle
 
-import dvc.api
 import tensorflow as tf
+
+# import dvc.api
+from dvc.api import DVCFileSystem
 
 # import tqdm # fails smh
 from tqdm.autonotebook import tqdm
@@ -12,16 +14,9 @@ import train_.parameters as parameters
 from models import Autoencoder, Linear
 
 if __name__ == "__main__":
-    # mnist = tf.keras.datasets.mnist
-    # fs = DVCFileSystem()
-    # fs.get("data", "data", recursive=True)
-    repo = "https://github.com/archqua/mnist_etc"
-    # with dvc.api.open("data/train.pkl", mode="rb") as fh:
-    #     Xy_train = pickle.load(fh)
-    with dvc.api.open("data/val.pkl", repo=repo, mode="rb") as fh:
-        X_val, y_val = pickle.load(fh)
-    # X_val = X_val / 255.0
-    # X_val = X_val[..., tf.newaxis].astype("float32")
+    fs = DVCFileSystem()
+    fs.get("data", "data", recursive=True)
+    X_val, y_val = pickle.load(open("data/val.pkl", "rb"))
 
     @tf.function
     def _preproc(images, labels):
