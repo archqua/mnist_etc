@@ -1,7 +1,9 @@
-import argparse
+# import argparse
 import os
 import pickle
+from dataclasses import dataclass
 
+import hydra
 import tensorflow as tf
 import tensorflow_privacy as tf_privacy
 
@@ -12,11 +14,21 @@ import names
 import train_.parameters as parameters
 from models import Autoencoder
 
-default_epochs = 3
-default_privacy = False
+
+@dataclass
+class AutoencoderTrainConfig:
+    hid_dim: int = 32
+    private: bool = False
+    epochs: int = 3
 
 
-def main(epochs=default_epochs, use_tf_privacy=default_privacy):
+# @hydra.main(config_path = "../conf/hyperparam", config_name = "autoencoder")
+def main(cfg: AutoencoderTrainConfig):
+    # print(f"HYDRA CWD: {cfg.data}")
+    hid_dim = cfg.hid_dim
+    use_tf_privacy = cfg.private
+    epochs = cfg.epochs
+
     if not os.path.exists("data"):
         raise FileNotFoundError("directory data needs to be loaded via dvc")
     X_train, y_train = pickle.load(open("data/train.pkl", "rb"))
@@ -56,7 +68,7 @@ def main(epochs=default_epochs, use_tf_privacy=default_privacy):
     #     [X_val[val_masks[i, ...]][:n_examples, ...] for i in range(10)]
     # )
 
-    ae = Autoencoder()
+    ae = Autoencoder(hid_dim=hid_dim)
     lo = tf.keras.losses.MeanSquaredError()
     if use_tf_privacy:
         opt = tf_privacy.DPKerasAdamOptimizer(
@@ -132,20 +144,23 @@ def main(epochs=default_epochs, use_tf_privacy=default_privacy):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="train autoencoder")
-    parser.add_argument(
-        "-p",
-        "--private",
-        action="store_true",
-        dest="use_tf_privacy",
-        default=default_privacy,
-    )
-    parser.add_argument(
-        "-e",
-        "--epochs",
-        dest="epochs",
-        default=default_epochs,
-        type=int,
-    )
-    args = parser.parse_args()
-    main(args.epochs, use_tf_privacy=args.use_tf_privacy)
+    # parser = argparse.ArgumentParser(description="train autoencoder")
+    # parser.add_argument(
+    #     "-p",
+    #     "--private",
+    #     action="store_true",
+    #     dest="use_tf_privacy",
+    #     default=default_privacy,
+    # )
+    # parser.add_argument(
+    #     "-e",
+    #     "--epochs",
+    #     dest="epochs",
+    #     default=default_epochs,
+    #     type=int,
+    # )
+    # args = parser.parse_args()
+    # main(args.epochs, use_tf_privacy=args.use_tf_privacy)
+    with hydra.initialize(version_base=None, config_path="../conf/hyperparam"):
+        cfg = hydra.compose(config_name="autoencoder")
+        main(cfg)

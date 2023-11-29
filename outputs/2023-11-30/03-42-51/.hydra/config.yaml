@@ -1,0 +1,8 @@
+autoencoder:
+  hid_dim: 32
+  private: false
+  epochs: 3
+classifier:
+  hid_dim: 32
+  private: false
+  epochs: 6
