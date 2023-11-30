@@ -18,15 +18,15 @@ else
   conda activate ./env
 fi
 
-poetry install
+poetry install &&
 # dvc pull before pre-commit to check .yaml configs
-dvc pull conf.dvc
+dvc pull conf.dvc &&
 
-pre-commit install
-pre-commit run -a
+pre-commit install &&
+pre-commit run -a &&
 
-python train.py
-python infer.py
+python train.py &&
+python infer.py &&
 
 if [[ -z "$CONDA_PREFIX" ]]; then
   deactivate
