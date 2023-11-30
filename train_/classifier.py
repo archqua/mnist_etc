@@ -4,6 +4,7 @@ import pickle
 from dataclasses import dataclass
 
 import hydra
+import mlflow
 import tensorflow as tf
 import tensorflow_privacy as tf_privacy
 
@@ -24,117 +25,139 @@ class ClassifierTrainConfig:
 
 # @hydra.main(config_path = "../conf/hyperparam", config_name = "classifier")
 def main(cfg: ClassifierTrainConfig):
-    inp_dim = cfg.inp_dim
-    use_tf_privacy = cfg.private
-    epochs = cfg.epochs
-
-    if not os.path.exists("data"):
-        raise FileNotFoundError("directory data needs to be loaded via dvc")
-    X_val, y_val = pickle.load(open("data/val.pkl", "rb"))
-
-    @tf.function
-    def _preproc(images, labels):
-        return tf.cast(images, tf.float32)[..., tf.newaxis] / 255.0, labels
-
-    batch_size = parameters.batch_size
-    dataset = (
-        tf.data.Dataset.from_tensor_slices((X_val, y_val))
-        .shuffle(X_val.shape[0])
-        .map(_preproc, num_parallel_calls=batch_size)
-    )
-    left_size = int((dataset.cardinality().numpy() * 0.9) // 32 * 32)
-    train_data, val_data = tf.keras.utils.split_dataset(dataset, left_size=left_size)
-    train_data = train_data.batch(batch_size)
-    val_data = val_data.batch(batch_size)
-    # train_data = (
-    #     tf.data.Dataset.from_tensor_slices((X_train, y_train))
-    #     .shuffle(X_train.shape[0])
-    #     .map(_preproc, num_parallel_calls=batch_size)
-    #     .batch(batch_size)
-    # )
-    # val_data = (
-    #     tf.data.Dataset.from_tensor_slices((X_val, y_val))
-    #     .map(_preproc, num_parallel_calls=batch_size)
-    #     .batch(batch_size)
-    # )
-
-    prefix = "tf_private_" if use_tf_privacy else ""
-    if not os.path.exists(names.artifacts):
-        raise FileNotFoundError(
-            f"directory `{names.artifacts}` must exist and contain"
-            + f"`{os.path.basename(names.ae_weights())}` after running train/autoencoder"
+    with mlflow.start_run(nested=True, run_name="classifier"):
+        inp_dim = cfg.inp_dim
+        use_tf_privacy = cfg.private
+        epochs = cfg.epochs
+        mlflow.log_params(
+            {
+                "classifier input dimension": inp_dim,
+                "classifier private learning": use_tf_privacy,
+                "classifier train epochs": epochs,
+            }
         )
-    if not os.path.exists(names.ae_weights(prefix="")):
-        raise FileNotFoundError(f"file `{names.ae_weights()}` not found")
 
-    ae = Autoencoder(hid_dim=inp_dim)
-    ae.build(input_shape=(batch_size, 28, 28, 1))
-    ae.load_weights(names.ae_weights(prefix=""))
-    clsf = Linear(activation=None)
-    if use_tf_privacy:
-        lo = tf.keras.losses.SparseCategoricalCrossentropy(
-            from_logits=True,
-            reduction=tf.losses.Reduction.NONE,
+        if not os.path.exists("data"):
+            raise FileNotFoundError("directory data needs to be loaded via dvc")
+        X_val, y_val = pickle.load(open("data/val.pkl", "rb"))
+
+        @tf.function
+        def _preproc(images, labels):
+            return tf.cast(images, tf.float32)[..., tf.newaxis] / 255.0, labels
+
+        batch_size = parameters.batch_size
+        dataset = (
+            tf.data.Dataset.from_tensor_slices((X_val, y_val))
+            .shuffle(X_val.shape[0])
+            .map(_preproc, num_parallel_calls=batch_size)
         )
-        _privacy_scale = batch_size
-        opt = tf_privacy.DPKerasAdamOptimizer(
-            l2_norm_clip=1.0,
-            noise_multiplier=0.025 * _privacy_scale,
-            num_microbatches=1 * _privacy_scale,
-        )
-    else:
-        lo = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
-        opt = tf.keras.optimizers.Adam()
+        left_size = int((dataset.cardinality().numpy() * 0.9) // 32 * 32)
+        train_data, val_data = tf.keras.utils.split_dataset(dataset, left_size=left_size)
+        train_data = train_data.batch(batch_size)
+        val_data = val_data.batch(batch_size)
+        # train_data = (
+        #     tf.data.Dataset.from_tensor_slices((X_train, y_train))
+        #     .shuffle(X_train.shape[0])
+        #     .map(_preproc, num_parallel_calls=batch_size)
+        #     .batch(batch_size)
+        # )
+        # val_data = (
+        #     tf.data.Dataset.from_tensor_slices((X_val, y_val))
+        #     .map(_preproc, num_parallel_calls=batch_size)
+        #     .batch(batch_size)
+        # )
 
-    train_loss = tf.keras.metrics.Mean("train_loss")
-    train_acc = tf.keras.metrics.Accuracy()
+        prefix = "tf_private_" if use_tf_privacy else ""
+        if not os.path.exists(names.artifacts):
+            raise FileNotFoundError(
+                f"directory `{names.artifacts}` must exist and contain"
+                + f"`{os.path.basename(names.ae_weights())}` after running train/autoencoder"
+            )
+        if not os.path.exists(names.ae_weights(prefix="")):
+            raise FileNotFoundError(f"file `{names.ae_weights()}` not found")
 
-    @tf.function
-    def _train_step(images, labels):
-        hidden = ae.encode(images)
-        with tf.GradientTape() as tape:
-            pred = clsf(hidden, training=True)
-            loss = lo(labels, pred)
+        ae = Autoencoder(hid_dim=inp_dim)
+        ae.build(input_shape=(batch_size, 28, 28, 1))
+        ae.load_weights(names.ae_weights(prefix=""))
+        clsf = Linear(activation=None)
         if use_tf_privacy:
-            opt.minimize(loss, clsf.trainable_variables, tape=tape)
+            lo = tf.keras.losses.SparseCategoricalCrossentropy(
+                from_logits=True,
+                reduction=tf.losses.Reduction.NONE,
+            )
+            _privacy_scale = batch_size
+            opt = tf_privacy.DPKerasAdamOptimizer(
+                l2_norm_clip=1.0,
+                noise_multiplier=0.025 * _privacy_scale,
+                num_microbatches=1 * _privacy_scale,
+            )
         else:
-            gradients = tape.gradient(loss, clsf.trainable_variables)
-            opt.apply_gradients(zip(gradients, clsf.trainable_variables))
+            lo = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
+            opt = tf.keras.optimizers.Adam()
 
-        train_loss(loss)
-        train_acc(labels, tf.math.argmax(pred, axis=1))
+        train_loss = tf.keras.metrics.Mean("train_loss")
+        train_acc = tf.keras.metrics.Accuracy()
 
-    val_loss = tf.keras.metrics.Mean("val_loss")
-    val_acc = tf.keras.metrics.Accuracy()
+        @tf.function
+        def _train_step(images, labels):
+            hidden = ae.encode(images)
+            with tf.GradientTape() as tape:
+                pred = clsf(hidden, training=True)
+                loss = lo(labels, pred)
+            if use_tf_privacy:
+                opt.minimize(loss, clsf.trainable_variables, tape=tape)
+            else:
+                gradients = tape.gradient(loss, clsf.trainable_variables)
+                opt.apply_gradients(zip(gradients, clsf.trainable_variables))
 
-    @tf.function
-    def _val_step(images, labels):
-        hidden = ae.encode(images)
-        pred = clsf(hidden, training=False)
-        loss = lo(labels, pred)
+            train_loss(loss)
+            train_acc(labels, tf.math.argmax(pred, axis=1))
 
-        val_loss(loss)
-        val_acc(labels, tf.math.argmax(pred, axis=1))
+        val_loss = tf.keras.metrics.Mean("val_loss")
+        val_acc = tf.keras.metrics.Accuracy()
 
-    for epoch in range(epochs):
-        train_loss.reset_states()
-        train_acc.reset_states()
-        val_loss.reset_states()
-        val_acc.reset_states()
+        @tf.function
+        def _val_step(images, labels):
+            hidden = ae.encode(images)
+            pred = clsf(hidden, training=False)
+            loss = lo(labels, pred)
 
-        print(f"training epoch {epoch + 1} in {epochs}")
-        for images, labels in tqdm(train_data):
-            _train_step(images, labels)
-        for images, labels in val_data:
-            _val_step(images, labels)
+            val_loss(loss)
+            val_acc(labels, tf.math.argmax(pred, axis=1))
 
-        print(f"train loss: {train_loss.result()}, validation loss: {val_loss.result()}")
-        print(
-            f"train accuracy: {train_acc.result():.3f}, validation accuracy: {val_acc.result():.3f}"
-        )
+        for epoch in range(epochs):
+            train_loss.reset_states()
+            train_acc.reset_states()
+            val_loss.reset_states()
+            val_acc.reset_states()
 
-    print("saving classifier FC weights into " + names.clsf_fc_weights(prefix=prefix))
-    clsf.save_weights(names.clsf_fc_weights(prefix=prefix))
+            print(f"training epoch {epoch + 1} in {epochs}")
+            for images, labels in tqdm(train_data):
+                _train_step(images, labels)
+            for images, labels in val_data:
+                _val_step(images, labels)
+
+            mlflow.log_metrics(
+                {
+                    "classifier train loss": float(train_loss.result()),
+                    "classifier validation loss": float(val_loss.result()),
+                },
+                step=epoch,
+            )
+            # print(f"train loss: {train_loss.result()}, validation loss: {val_loss.result()}")
+            mlflow.log_metrics(
+                {
+                    "classifier train accuracy": float(train_acc.result()),
+                    "classifier validation accuracy": float(val_acc.result()),
+                },
+                step=epoch,
+            )
+            # print(
+            #     f"train accuracy: {train_acc.result():.3f}, validation accuracy: {val_acc.result():.3f}"
+            # )
+
+        print("saving classifier FC weights into " + names.clsf_fc_weights(prefix=prefix))
+        clsf.save_weights(names.clsf_fc_weights(prefix=prefix))
 
 
 if __name__ == "__main__":

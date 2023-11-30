@@ -164,6 +164,8 @@ playground/
 artifacts/
 # hydra quirks
 /outputs
+# mlflow outputs
+/mlruns
 # dvc
 /data
 /conf

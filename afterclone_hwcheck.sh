@@ -19,7 +19,7 @@ else
 fi
 
 poetry install
-# dvc pull befor pre-commit to check .yaml configs
+# dvc pull before pre-commit to check .yaml configs
 dvc pull conf.dvc
 
 pre-commit install
