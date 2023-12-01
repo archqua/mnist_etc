@@ -7,6 +7,7 @@ import hydra
 import mlflow
 import tensorflow as tf
 import tensorflow_privacy as tf_privacy
+import tf2onnx
 
 # import tqdm # fails smh
 from tqdm.autonotebook import tqdm
@@ -157,6 +158,15 @@ def main(cfg: AutoencoderTrainConfig):
 
         print("saving autoencoder weights into " + names.ae_weights(prefix=prefix))
         ae.save_weights(names.ae_weights(prefix=prefix))
+        print(
+            "saving autoencoder weights into "
+            + names.ae_weights(prefix=prefix, suffix=".onnx")
+        )
+        _ = tf2onnx.convert.from_keras(
+            ae,
+            input_signature=(tf.TensorSpec((None, 28, 28, 1), tf.float32, name="input"),),
+            output_path=names.ae_weights(prefix=prefix, suffix=".onnx"),
+        )
 
 
 if __name__ == "__main__":

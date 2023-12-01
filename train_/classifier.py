@@ -7,6 +7,7 @@ import hydra
 import mlflow
 import tensorflow as tf
 import tensorflow_privacy as tf_privacy
+import tf2onnx
 
 # import tqdm # fails smh
 from tqdm.autonotebook import tqdm
@@ -156,8 +157,19 @@ def main(cfg: ClassifierTrainConfig):
             #     f"train accuracy: {train_acc.result():.3f}, validation accuracy: {val_acc.result():.3f}"
             # )
 
+            # mlflow.tensorflow.log_model(clsf, "clsf_fc")
+
         print("saving classifier FC weights into " + names.clsf_fc_weights(prefix=prefix))
         clsf.save_weights(names.clsf_fc_weights(prefix=prefix))
+        print(
+            "saving classifier FC weights into "
+            + names.clsf_fc_weights(prefix=prefix, suffix=".onnx")
+        )
+        _ = tf2onnx.convert.from_keras(
+            clsf,
+            input_signature=(tf.TensorSpec((None, inp_dim), tf.float32, name="input"),),
+            output_path=names.clsf_fc_weights(prefix=prefix, suffix=".onnx"),
+        )
 
 
 if __name__ == "__main__":

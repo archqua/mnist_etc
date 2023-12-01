@@ -9,12 +9,12 @@ def ae_training_examples(epoch, plus_one=True, prefix=""):
     )
 
 
-def ae_weights(prefix=""):
-    return os.path.join(artifacts, prefix + "ae_weights.h5")
+def ae_weights(prefix="", suffix=".h5"):
+    return os.path.join(artifacts, prefix + "ae_weights" + suffix)
 
 
-def clsf_fc_weights(prefix=""):
-    return os.path.join(artifacts, prefix + "clsf_fc_weights.h5")
+def clsf_fc_weights(prefix="", suffix=".h5"):
+    return os.path.join(artifacts, prefix + "clsf_fc_weights" + suffix)
 
 
 def clsf_inference(prefix=""):
