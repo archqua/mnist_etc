@@ -1,5 +1,26 @@
 #!/usr/bin/env bash
 
+init ()
+{
+  poetry install &&
+  # dvc pull before pre-commit to check .yaml configs
+  dvc pull conf.dvc &&
+
+  pre-commit install &&
+  pre-commit run -a
+}
+
+cleanup()
+{
+  if [[ -z "$CONDA_PREFIX" ]]; then
+    deactivate
+  else
+    conda deactivate
+    poetry config --unset virtualenvs.create
+    poetry config --unset virtualenvs.path
+  fi
+}
+
 if [[ -z "$CONDA_PREFIX" ]]; then
   python3 -m venv env
   . env/bin/activate
@@ -18,27 +39,20 @@ else
   conda activate ./env
 fi
 
-poetry install &&
-# dvc pull before pre-commit to check .yaml configs
-dvc pull conf.dvc &&
-
-pre-commit install &&
-pre-commit run -a &&
-
-(
-  mlflow server --host localhost --port 5000 &
+if init; then
   (
-    sleep 1
-    (python train.py && python infer.py)
-  ) &
-  wait -n
-)
-(pkill -P $$ || kill 0) & wait
+    mlflow server --host localhost --port 5000 &
+    (
+      sleep 1
+      (python train.py && python infer.py)
+    ) &
+    wait -n
+  )
+  (pkill -P $$ || kill 0) & wait
 
-if [[ -z "$CONDA_PREFIX" ]]; then
-  deactivate
+  cleanup
 else
-  conda deactivate
-  poetry config --unset virtualenvs.create
-  poetry config --unset virtualenvs.path
+  cleanup
+  echo "couldn't prepare environment T_T"
+  exit 1
 fi
