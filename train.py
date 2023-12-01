@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import hydra
 import mlflow
@@ -8,9 +8,17 @@ import train_
 
 
 @dataclass
+class ClassifierReducedConfig:
+    private: bool = False
+    epochs: int = 6
+
+
+@dataclass
 class TrainConfig:
-    autoencoder = train_.AutoencoderTrainConfig()
-    classifier = train_.ClassifierTrainConfig()
+    autoencoder: train_.AutoencoderTrainConfig = field(
+        default_factory=train_.AutoencoderTrainConfig
+    )
+    classifier: ClassifierReducedConfig = field(default_factory=ClassifierReducedConfig)
     run_name: str = None
     tracking_uri: str = ""
     # TODO verbosity, dvc call
@@ -29,7 +37,13 @@ def main(cfg: TrainConfig):
         train_.autoencoder.main(cfg.autoencoder)
 
         print("training classifier")
-        train_.classifier.main(cfg.classifier)
+        clsf_cfg = train_.ClassifierTrainConfig(
+            inp_dim=cfg.autoencoder.hid_dim,
+            private=cfg.classifier.private,
+            epochs=cfg.classifier.epochs,
+            ae_cfg=cfg.autoencoder,
+        )
+        train_.classifier.main(clsf_cfg)
 
         print("training finished, results can be found in `artifacts` directory")
 

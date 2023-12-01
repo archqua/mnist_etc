@@ -1,6 +1,7 @@
 import os
 import pickle
 
+import hydra
 import tensorflow as tf
 
 # import dvc.api
@@ -12,8 +13,13 @@ from tqdm.autonotebook import tqdm
 import names
 import train_.parameters as parameters
 from models import Autoencoder, Linear
+from train import TrainConfig
 
-if __name__ == "__main__":
+InferenceConfig = TrainConfig
+
+
+@hydra.main(version_base=None, config_path="conf/hyperparam", config_name="infer")
+def main(cfg: InferenceConfig):
     fs = DVCFileSystem()
     fs.get("data", "data", recursive=True)
     X_val, y_val = pickle.load(open("data/val.pkl", "rb"))
@@ -35,22 +41,34 @@ if __name__ == "__main__":
     train_data = train_data.batch(batch_size)
     val_data = val_data.batch(batch_size)
 
+    ae_weights_name = names.ae_weights(
+        hid_dim=cfg.autoencoder.hid_dim,
+        epochs=cfg.autoencoder.epochs,
+        private=cfg.autoencoder.private,
+    )
+    clsf_fc_weights_name = names.clsf_fc_weights(
+        inp_dim=cfg.autoencoder.hid_dim,
+        ae_epochs=cfg.autoencoder.epochs,
+        ae_private=cfg.autoencoder.private,
+        epochs=cfg.classifier.epochs,
+        private=cfg.classifier.private,
+    )
     if not os.path.exists(names.artifacts):
         raise FileNotFoundError(
             f"directory `{names.artifacts}` must exist and contain"
             + f"`{os.path.basename(names.ae_weights())}` after running train/autoencoder"
         )
-    if not os.path.exists(names.ae_weights()):
-        raise FileNotFoundError(f"file `{names.ae_weights()}` not found")
-    if not os.path.exists(names.clsf_fc_weights()):
-        raise FileNotFoundError(f"file `{names.clsf_fc_weights()} not found`")
+    if not os.path.exists(ae_weights_name):
+        raise FileNotFoundError(f"file `{ae_weights_name}` not found")
+    if not os.path.exists(clsf_fc_weights_name):
+        raise FileNotFoundError(f"file `{clsf_fc_weights_name} not found`")
 
     ae = Autoencoder()
     ae.build(input_shape=(batch_size, 28, 28, 1))
-    ae.load_weights(names.ae_weights())
+    ae.load_weights(ae_weights_name)
     clsf = Linear(activation=None)
     clsf.build(input_shape=(batch_size, ae.hid_dim))
-    clsf.load_weights(names.clsf_fc_weights())
+    clsf.load_weights(clsf_fc_weights_name)
 
     acc = tf.keras.metrics.Accuracy()
 
@@ -72,7 +90,18 @@ if __name__ == "__main__":
 
     print(f"inference (validation) accuracy is {acc.result():.3f}")
 
-    print(f"saving inference results into {names.clsf_inference()}")
-    with open(names.clsf_inference(), "w") as file:
+    clsf_inference_name = names.clsf_inference(
+        inp_dim=cfg.autoencoder.hid_dim,
+        ae_epochs=cfg.autoencoder.epochs,
+        ae_private=cfg.autoencoder.private,
+        epochs=cfg.classifier.epochs,
+        private=cfg.classifier.private,
+    )
+    print(f"saving inference results into {clsf_inference_name}")
+    with open(clsf_inference_name, "w") as file:
         for inf in inference:
             file.write(f"{inf}\n")
+
+
+if __name__ == "__main__":
+    main()

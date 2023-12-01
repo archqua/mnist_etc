@@ -1,7 +1,7 @@
 # import argparse
 import os
 import pickle
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import hydra
 import mlflow
@@ -15,6 +15,7 @@ from tqdm.autonotebook import tqdm
 import names
 import train_.parameters as parameters
 from models import Autoencoder, Linear
+from train_.autoencoder import AutoencoderTrainConfig
 
 
 @dataclass
@@ -22,10 +23,14 @@ class ClassifierTrainConfig:
     inp_dim: int = 32
     private: bool = False
     epochs: int = 6
+    ae_cfg: AutoencoderTrainConfig = field(default_factory=AutoencoderTrainConfig)
 
 
 # @hydra.main(config_path = "../conf/hyperparam", config_name = "classifier")
 def main(cfg: ClassifierTrainConfig):
+    assert (
+        cfg.inp_dim == cfg.ae_cfg.hid_dim
+    ), "classifier's input dim must be equal to AE's hidden dim"
     with mlflow.start_run(nested=True, run_name="classifier"):
         inp_dim = cfg.inp_dim
         use_tf_privacy = cfg.private
@@ -68,18 +73,24 @@ def main(cfg: ClassifierTrainConfig):
         #     .batch(batch_size)
         # )
 
-        prefix = "tf_private_" if use_tf_privacy else ""
+        prefix = ""  # essentially obscure
+        ae_weights_name = names.ae_weights(
+            hid_dim=cfg.ae_cfg.hid_dim,
+            epochs=cfg.ae_cfg.epochs,
+            private=cfg.ae_cfg.private,
+            prefix=prefix,
+        )
         if not os.path.exists(names.artifacts):
             raise FileNotFoundError(
                 f"directory `{names.artifacts}` must exist and contain"
-                + f"`{os.path.basename(names.ae_weights())}` after running train/autoencoder"
+                + f"`{os.path.basename(ae_weights_name)}` after running train/autoencoder"
             )
-        if not os.path.exists(names.ae_weights(prefix="")):
-            raise FileNotFoundError(f"file `{names.ae_weights()}` not found")
+        if not os.path.exists(ae_weights_name):
+            raise FileNotFoundError(f"file `{ae_weights_name}` not found")
 
         ae = Autoencoder(hid_dim=inp_dim)
         ae.build(input_shape=(batch_size, 28, 28, 1))
-        ae.load_weights(names.ae_weights(prefix=""))
+        ae.load_weights(ae_weights_name)
         clsf = Linear(activation=None)
         if use_tf_privacy:
             lo = tf.keras.losses.SparseCategoricalCrossentropy(
@@ -159,16 +170,30 @@ def main(cfg: ClassifierTrainConfig):
 
             # mlflow.tensorflow.log_model(clsf, "clsf_fc")
 
-        print("saving classifier FC weights into " + names.clsf_fc_weights(prefix=prefix))
-        clsf.save_weights(names.clsf_fc_weights(prefix=prefix))
-        print(
-            "saving classifier FC weights into "
-            + names.clsf_fc_weights(prefix=prefix, suffix=".onnx")
+        clsf_fc_weights_name = names.clsf_fc_weights(
+            inp_dim=inp_dim,
+            ae_epochs=cfg.ae_cfg.epochs,
+            ae_private=cfg.ae_cfg.private,
+            epochs=epochs,
+            private=use_tf_privacy,
+            prefix=prefix,
         )
+        print("saving classifier FC weights into " + clsf_fc_weights_name)
+        clsf.save_weights(clsf_fc_weights_name)
+        clsf_fc_weights_name_onnx = names.clsf_fc_weights(
+            inp_dim=inp_dim,
+            ae_epochs=cfg.ae_cfg.epochs,
+            ae_private=cfg.ae_cfg.private,
+            epochs=epochs,
+            private=use_tf_privacy,
+            prefix=prefix,
+            suffix=".onnx",
+        )
+        print("saving classifier FC weights into " + clsf_fc_weights_name_onnx)
         _ = tf2onnx.convert.from_keras(
             clsf,
             input_signature=(tf.TensorSpec((None, inp_dim), tf.float32, name="input"),),
-            output_path=names.clsf_fc_weights(prefix=prefix, suffix=".onnx"),
+            output_path=clsf_fc_weights_name_onnx,
         )
 
 

@@ -25,8 +25,15 @@ dvc pull conf.dvc &&
 pre-commit install &&
 pre-commit run -a &&
 
-python train.py &&
-python infer.py &&
+(
+  mlflow server --host localhost --port 5000 &
+  (
+    sleep 1
+    (python train.py && python infer.py)
+  ) &
+  wait -n
+)
+(pkill -P $$ || kill 0) & wait
 
 if [[ -z "$CONDA_PREFIX" ]]; then
   deactivate

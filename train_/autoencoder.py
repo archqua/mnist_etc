@@ -113,7 +113,7 @@ def main(cfg: AutoencoderTrainConfig):
 
             val_loss(loss)
 
-        prefix = "tf_private_" if use_tf_privacy else ""
+        prefix = ""  # essentially obscure
         if not os.path.exists(names.artifacts):
             os.mkdir(names.artifacts)
 
@@ -139,7 +139,13 @@ def main(cfg: AutoencoderTrainConfig):
             indices = tf.random.uniform(
                 shape=(10,), minval=0, maxval=n_examples, dtype=tf.int32
             )
-            picdir = names.ae_training_examples(epoch, prefix=prefix)
+            picdir = names.ae_training_examples(
+                epoch,
+                hid_dim=hid_dim,
+                epochs=epochs,
+                private=use_tf_privacy,
+                prefix=prefix,
+            )
             if not os.path.exists(picdir):
                 # TODO handle permission denied?
                 os.makedirs(picdir)
@@ -156,16 +162,26 @@ def main(cfg: AutoencoderTrainConfig):
                     rec[0, ...],
                 )
 
-        print("saving autoencoder weights into " + names.ae_weights(prefix=prefix))
-        ae.save_weights(names.ae_weights(prefix=prefix))
-        print(
-            "saving autoencoder weights into "
-            + names.ae_weights(prefix=prefix, suffix=".onnx")
+        ae_weights_name = names.ae_weights(
+            hid_dim=hid_dim,
+            epochs=epochs,
+            private=use_tf_privacy,
+            prefix=prefix,
         )
+        print("saving autoencoder weights into " + ae_weights_name)
+        ae.save_weights(ae_weights_name)
+        ae_weights_name_onnx = names.ae_weights(
+            hid_dim=hid_dim,
+            epochs=epochs,
+            private=use_tf_privacy,
+            prefix=prefix,
+            suffix=".onnx",
+        )
+        print("saving autoencoder weights into " + ae_weights_name_onnx)
         _ = tf2onnx.convert.from_keras(
             ae,
             input_signature=(tf.TensorSpec((None, 28, 28, 1), tf.float32, name="input"),),
-            output_path=names.ae_weights(prefix=prefix, suffix=".onnx"),
+            output_path=ae_weights_name_onnx,
         )
 
 
