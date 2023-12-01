@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+port=${1:-5000}
+tracking_uri="http://localhost:$port"
+
 init ()
 {
   poetry install &&
@@ -40,15 +43,20 @@ else
 fi
 
 if init; then
-  (
-    mlflow server --host localhost --port 5000 &
-    (
-      sleep 1
-      (python train.py && python infer.py)
-    ) &
+  {
+    if ! mlflow server --host localhost --port $port; then "failed to run mlflow server"; fi
+  } & {
+    sleep 1
+    if ! (
+      python train.py tracking_uri="$tracking_uri" && python infer.py tracking_uri="$tracking_uri"
+    ); then
+      echo "failed to run train/infer scripts"
+    fi
+  } & {
+    trap "kill 0" SIGINT
     wait -n
-  )
-  (pkill -P $$ || kill 0) & wait
+  }
+  kill 0 & wait
 
   cleanup
 else
