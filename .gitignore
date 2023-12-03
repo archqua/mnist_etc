@@ -169,6 +169,8 @@ artifacts/
 /mlartifacts
 # mlserver model settings
 model-settings.json
+# I don't even know where this comes from...
+.metrics
 # dvc
 /data
 /conf
