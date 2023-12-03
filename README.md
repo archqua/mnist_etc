@@ -54,3 +54,4 @@ Minor:
 Major:
 - automatic docgen with sphinx and github actions
 - `tensorflow.privacy` to break hill climbing reconstruction (it doesn't break reconstruction)
+- remove tesnorflow import when running inference server
