@@ -60,6 +60,7 @@ class Autoencoder(keras.Model):
         self.hid_dim = hid_dim
         self.encoder = Encoder(hid_dim=hid_dim)
         self.decoder = Decoder(hid_dim=hid_dim, out_activation=dec_out_activation)
+        self.dec_out_activation = dec_out_activation
 
     def encode(self, x):
         return self.encoder(x)

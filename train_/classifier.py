@@ -14,7 +14,7 @@ from tqdm.autonotebook import tqdm
 
 import names
 import train_.parameters as parameters
-from models import Autoencoder, Linear
+from models import Autoencoder, FullModel, Linear
 from train_.autoencoder import AutoencoderTrainConfig
 
 
@@ -194,6 +194,38 @@ def main(cfg: ClassifierTrainConfig):
             clsf,
             input_signature=(tf.TensorSpec((None, inp_dim), tf.float32, name="input"),),
             output_path=clsf_fc_weights_name_onnx,
+        )
+
+        full_model = FullModel(
+            hid_dim=inp_dim, dec_out_activation=ae.dec_out_activation, n_classes=10
+        )
+        full_model.autoencoder = ae
+        full_model.fc = clsf
+        full_model.build(input_shape=(batch_size, 28, 28, 1))
+        full_model_weights_name = names.full_model_weights(
+            hid_dim=inp_dim,
+            ae_epochs=cfg.ae_cfg.epochs,
+            ae_private=cfg.ae_cfg.private,
+            clsf_epochs=epochs,
+            clsf_private=use_tf_privacy,
+            prefix=prefix,
+        )
+        print("saving full model weights into " + full_model_weights_name)
+        full_model.save_weights(full_model_weights_name)
+        full_model_weights_name_onnx = names.full_model_weights(
+            hid_dim=inp_dim,
+            ae_epochs=cfg.ae_cfg.epochs,
+            ae_private=cfg.ae_cfg.private,
+            clsf_epochs=epochs,
+            clsf_private=use_tf_privacy,
+            prefix=prefix,
+            suffix=".onnx",
+        )
+        print("saving full model weights into " + full_model_weights_name_onnx)
+        _ = tf2onnx.convert.from_keras(
+            full_model,
+            input_signature=(tf.TensorSpec((None, 28, 28, 1), tf.float32, name="input"),),
+            output_path=full_model_weights_name_onnx,
         )
 
 

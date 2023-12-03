@@ -20,7 +20,8 @@ class TrainConfig:
     )
     classifier: ClassifierReducedConfig = field(default_factory=ClassifierReducedConfig)
     run_name: str = None
-    tracking_uri: str = ""
+    # https://github.com/mlflow/mlflow/issues/7819
+    tracking_uri: str = "http://localhost:5000"
     # TODO verbosity, dvc call
 
 

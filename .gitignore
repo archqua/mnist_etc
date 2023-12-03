@@ -166,6 +166,9 @@ artifacts/
 /outputs
 # mlflow outputs
 /mlruns
+/mlartifacts
+# mlserver model settings
+model-settings.json
 # dvc
 /data
 /conf

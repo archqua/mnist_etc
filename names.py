@@ -75,3 +75,35 @@ def clsf_inference(
         + clsf_(inp_dim, ae_epochs, ae_private, epochs, private)
         + "_inference.csv",
     )
+
+
+def full_model_(
+    hid_dim=32,
+    ae_epochs=3,
+    ae_private=False,
+    clsf_epochs=6,
+    clsf_private=False,
+):
+    return (
+        f"full_model_h{hid_dim}_ee{ae_epochs}"
+        + ("_eprivate" if ae_private else "")
+        + f"_ce{clsf_epochs}"
+        + ("_cprivate" if clsf_private else "")
+    )
+
+
+def full_model_weights(
+    hid_dim=32,
+    ae_epochs=3,
+    ae_private=False,
+    clsf_epochs=6,
+    clsf_private=False,
+    prefix="",
+    suffix=".h5",
+):
+    return os.path.join(
+        artifacts,
+        prefix
+        + full_model_(hid_dim, ae_epochs, ae_private, clsf_epochs, clsf_private)
+        + suffix,
+    )
