@@ -16,3 +16,11 @@ services:
     environment:
       - LC_ALL=C.UTF-8
       - LANG=C.UTF-8
+    deploy:
+      resources:
+        limits:
+          cpus: "2.00"
+          memory: 512M
+        reservations:
+          cpus: "0.25"
+          memory: 16M
