@@ -174,3 +174,4 @@ model-settings.json
 # dvc
 /data
 /conf
+/triton/model_repository

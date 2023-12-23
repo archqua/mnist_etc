@@ -18,6 +18,7 @@ class FullModel(keras.Model):
             hid_dim=hid_dim, dec_out_activation=dec_out_activation
         )
         self.fc = Linear(out_dim=n_classes)
+        # self.n_classes = n_classes
 
     def call(self, X):
         return self.fc(self.autoencoder.encode(X))
@@ -27,3 +28,8 @@ class FullModel(keras.Model):
 
     def decode(self, X):
         return self.autoencoder.decode(X)
+
+    def build(self, input_shape):
+        super().build(input_shape=input_shape)
+        self.autoencoder.build(input_shape=input_shape)
+        self.fc.build(input_shape=(input_shape[0], self.autoencoder.hid_dim))
