@@ -5,7 +5,7 @@ I wanted to use it to build digit classifier that doesn't allow reconstructing
 input image using model's outputs.
 I didn't manage to do so and now it's just homework.
 
-Configuration is stored via `dvc`.
+Configuration and weights for onnx model to be run using triton are stored via `dvc`.
 Run `dvc pull conf.dvc` before doing anything.
 
 Currently there are two train loops in `train_` directory:
